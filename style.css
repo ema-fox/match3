@@ -1,0 +1,127 @@
+
+body {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+@media (max-aspect-ratio: 1/1) {
+    body {
+        flex-direction: column-reverse;
+    }
+}
+
+body > *:first-child {
+    flex-shrink: 10;
+}
+
+#Enemies {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#Board2 {
+    --size: 7;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+
+    aspect-ratio: 1/1;
+    width: 100vmin;
+}
+
+#Left, #Right, #Top, #Bottom {
+    display: contents;
+}
+
+#Left .button {
+    grid-column: 1;
+}
+
+#Right > .button {
+    grid-column: 9;
+}
+
+#Top .button {
+    grid-row: 1;
+}
+
+#Bottom > .button {
+    grid-row: 9;
+}
+
+#Board {
+    position: relative;
+    aspect-ratio: 1/1;
+    grid-row: 2 / 9;
+    grid-column: 2 / 9;
+}
+
+.button {
+    text-align: center;
+    font-size: 4vmin;
+    user-select: none;
+    cursor: pointer;
+    aspect-ratio: 1/1;
+    background: oklch(0.8 0 0);
+    margin-bottom: 25%;
+    margin-right: 25%;
+}
+
+.stone {
+    position: absolute;
+    transition: opacity 0.5s, top 0.5s, left 0.5s;
+    width: 10%;
+    height: 10%;
+    margin: 0.5%;
+    text-align: center;
+    font-size: 4vmin;
+    user-select: none;
+    cursor: pointer;
+}
+
+
+.enemy {
+    margin: 1ch;
+    padding: 1ch;
+}
+
+.color-0 {
+    --h: 40;
+    background: oklch(0.7 0.2 var(--h));
+}
+
+.color-1 {
+    --h: 100;
+    background: oklch(0.7 0.2 var(--h));
+}
+
+.color-2 {
+    --h: 160;
+    background: oklch(0.7 0.2 var(--h));
+}
+
+.color-3 {
+    --h: 220;
+    background: oklch(0.7 0.2 var(--h));
+}
+
+.color-4 {
+    --h: 280;
+    background: oklch(0.7 0.2 var(--h));
+}
+
+.level-1 {
+    background: oklch(0.7 0.2 var(--h));
+}
+
+.level-2 {
+    background: oklch(0.8 0.2 var(--h));
+}
+
+.level-3 {
+    background: oklch(0.9 0.2 var(--h));
+}
+
+.level-4 {
+    background: oklch(1 0.2 var(--h));
+}
