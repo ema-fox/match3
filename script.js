@@ -1,5 +1,7 @@
 'use strict';
 
+const I = Immutable.fromJS;
+
 function animation_frame() {
     return new Promise(resolve => requestAnimationFrame(resolve));
 }
@@ -12,10 +14,63 @@ function mod(n, d) {
     return ((n % d) + d) % d;
 }
 
+function rand(end) {
+    return (Math.random() * end) | 0;
+}
+
+function rand_choice(xs) {
+    return xs.get(rand(xs.count()));
+}
+
 const SIZE = 7;
-const COLORS = 4;
 
 const TILEPCT = 100 / SIZE;
+
+const SKILLS = I({
+    'fire-ball': {
+        levels: [
+            {dmg: 1, area: 1},
+            {dmg: 2, area: 2},
+            {dmg: 4, area: 4},
+            {dmg: 16, area: 16},
+        ],
+        effective: 'skeleton',
+    },
+    'ice-storm': {
+        levels: [
+            {dmg: 1, area: 1},
+            {dmg: 1, area: 4},
+            {dmg: 2, area: 8},
+            {dmg: 16, area: 16},
+        ],
+        effective: 'leech',
+    },
+    'battle-axe': {
+        levels: [
+            {dmg: 1, area: 1},
+            {dmg: 4, area: 1},
+            {dmg: 8, area: 2},
+            {dmg: 32, area: 8},
+        ],
+        effective: 'tentacle-vine',
+    },
+    'arrows': {
+        levels: [
+            {dmg: 1, area: 1},
+            {dmg: 2, area: 2},
+            {dmg: 4, area: 4},
+            {dmg: 16, area: 16},
+        ],
+        effective: 'werhog',
+    }
+});
+
+const MONSTERS = I([
+    'skeleton',
+    'leech',
+    'werhog',
+    'tentacle-vine'
+]);
 
 function P(p0, p1) {
     return Immutable.List([p0, p1]);
@@ -25,13 +80,11 @@ function level2power(l) {
     return Math.pow(4, l - 1);
 }
 
-const I = Immutable.fromJS;
-
 let state = I({
     board: Immutable.Map({}),
 
     enemies: Immutable.Range(0, 50).map(i => Immutable.Map({
-        color: (Math.random() * COLORS) | 0,
+        type: rand_choice(MONSTERS),
         hp: 1 + i + (Math.random() * 5) | 0,
     })).toList(),
 
@@ -40,6 +93,8 @@ let state = I({
         xp: 0,
     }
 });
+
+let hover = null;
 
 function all_large_columns() {
     return Immutable.Range(0, SIZE).map(p0 =>
@@ -70,7 +125,7 @@ let next_id = 0;
 function make_stone() {
     return Immutable.Map({
         id: next_id++,
-        color: (Math.random() * COLORS) | 0,
+        type: rand_choice(SKILLS.keySeq()),
         level: 1
     });
 }
@@ -131,16 +186,34 @@ function rotate_col(p0, ammount) {
     )));
 }
 
+function stone_data(stone) {
+    let skill = SKILLS.get(stone.get('type'));
+    let lvlskill = skill.getIn(['levels', stone.get('level') - 1]);
+    return lvlskill.merge(skill.remove('levels'))
+}
+
+function get_dmgs(es, skill) {
+    let power = skill.get('dmg');
+    return es.map((e, i) => {
+        if (i < skill.get('area')) {
+            return e.get('type') === skill.get('effective') ? power * 2 : power;
+        } else {
+            return 0;
+        }
+    })
+}
+
 function deploy(p) {
     return st => {
         let stone = st.getIn(['board', p]);
-        let power = level2power(stone.get('level'));
+        let skill = stone_data(stone);
         let newst = st
             .update('board', b =>
                 b.update(p, stone => stone.set('ghost', true))
             )
             .update('enemies', es => {
-                return es.update(0, e => e.update('hp', hp => hp - (e.get('color') === stone.get('color') ? power * 2 : power)));
+                return es.zipWith((e, dmg) => e.update('hp', hp => hp - dmg),
+                                  get_dmgs(es, skill));
             });
         let addxp = newst.get('enemies').filter(e => e.get('hp') <= 0).count();
         return newst.update('enemies', es => es.filter(e => e.get('hp') > 0))
@@ -154,7 +227,7 @@ function board2axs(b) {
         t: 'div',
         parent: 'Board',
         attrs: {id: `stone-${stone.get('id')}`,
-                'class': `stone color-${stone.get('color')} level-${stone.get('level')}`},
+                'class': `stone level-${stone.get('level')} ${stone.get('type')}`},
         style: {
             left: `${p.get(0) * TILEPCT}%`,
             top: `${p.get(1) * TILEPCT}%`,
@@ -178,7 +251,7 @@ function add_attrs_props_style(el, tel) {
 
     tel.get('style', [])
         .forEach((v, k) => {
-            el.style[k] = v;
+            el.style.setProperty(k, v);
         });
 
     tel.get('on', [])
@@ -226,7 +299,7 @@ function conform(tel) {
 
     el.base.get('style', [])
         .forEach((_, k) => {
-            delete el.style[k];
+            delete el.style.removeProperty(k);
         });
 
     add_attrs_props_style(el, tel);
@@ -234,18 +307,30 @@ function conform(tel) {
 }
 
 function render() {
-    HP.innerText = state.getIn(['player', 'hp']);
-    XP.innerText = state.getIn(['player', 'xp']);
+    let st = state;
+    let dmgs = Immutable.Repeat(0);
+    if (hover) {
+        let stone = st.getIn(['board', hover]);
+        if (stone) {
+            let skill = stone_data(stone);
+            dmgs = get_dmgs(st.get('enemies'), skill);
+        }
+    }
+    HP.innerText = st.getIn(['player', 'hp']);
+    XP.innerText = st.getIn(['player', 'xp']);
     Enemies.replaceWith(element(Immutable.fromJS({
         t: 'div',
         attrs: {'id': 'Enemies'},
-        children: state.get('enemies').map(e => Immutable.fromJS({
+        children: st.get('enemies').zipWith((e, dmg) => Immutable.fromJS({
             t: 'div',
-            attrs: {'class': `enemy color-${e.get('color')}`},
-            props: {'innerText': `HP: ${e.get('hp')}`}
-        }))
+            attrs: {'class': `enemy ${e.get('type')}`,
+                    'data-hp': '50%'},
+            props: {'innerText': `HP: ${e.get('hp')}`},
+            style: {'--hp': `${100 - 100 * (dmg / e.get('hp'))}%`},
+        }),
+                                           dmgs)
     })));
-    board2axs(state.get('board')).forEach(conform);
+    board2axs(st.get('board')).forEach(conform);
 }
 
 function update2(f) {
@@ -302,28 +387,28 @@ function add_buttons() {
     Right.append(...Immutable.Range(0, SIZE).map(i =>
         element(Immutable.fromJS({t: 'div',
                                   attrs: {'class': 'button'},
-                                  style: {gridRow: 2 + i},
+                                  style: {'grid-row': 2 + i},
                                   props: {innerText: ">"}, on: {click: () => {u(rotate_row(i, 1));}}}))
     ));
 
     Left.append(...Immutable.Range(0, SIZE).map(i =>
         element(Immutable.fromJS({t: 'div',
                                   attrs: {'class': 'button'},
-                                  style: {gridRow: 2 + i},
+                                  style: {'grid-row': 2 + i},
                                   props: {innerText: "<"}, on: {click: () => {u(rotate_row(i, -1));}}}))
     ));
 
     Bottom.append(...Immutable.Range(0, SIZE).map(i =>
         element(Immutable.fromJS({t: 'div',
                                   attrs: {'class': 'button'},
-                                  style: {gridColumn: 2 + i},
+                                  style: {'grid-column': 2 + i},
                                   props: {innerText: "V"}, on: {click: () => {u(rotate_col(i, 1));}}}))
     ));
 
     Top.append(...Immutable.Range(0, SIZE).map(i =>
         element(Immutable.fromJS({t: 'div',
                                   attrs: {'class': 'button'},
-                                  style: {gridColumn: 2 + i},
+                                  style: {'grid-column': 2 + i},
                                   props: {innerText: "A"}, on: {click: () => {u(rotate_col(i, -1));}}}))
     ));
 
@@ -338,7 +423,24 @@ addEventListener('DOMContentLoaded', event => {
     add_buttons();
     Board.addEventListener('click', event => {
         let p = event.target.p;
-        u(deploy(p));
+        hover = null;
+        if (p) {
+            u(deploy(p));
+        }
+    });
+    Board.addEventListener('mouseover', event => {
+        let p = event.target.p;
+        hover = p;
+        render();
+        if (p) {
+            let stone = state.getIn(['board', p]);
+            let skill = stone_data(stone);
+            console.log(JSON.stringify(skill));
+        }
+    });
+    Board.addEventListener('mouseout', event => {
+        hover = null;
+        render();
     });
     init_board();
 });

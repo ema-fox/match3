@@ -2,6 +2,8 @@
 body {
     display: flex;
     flex-direction: row-reverse;
+    background: oklch(0.1 0.1 40);
+    color: oklch(0.9 0.1 80);
 }
 
 @media (max-aspect-ratio: 1/1) {
@@ -17,6 +19,7 @@ body > *:first-child {
 #Enemies {
     display: flex;
     flex-wrap: wrap;
+    color: oklch(0.1 0.0 80);
 }
 
 #Board2 {
@@ -24,6 +27,7 @@ body > *:first-child {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
     grid-template-rows: repeat(9, 1fr);
+    color: oklch(0.1 0.0 80);
 
     aspect-ratio: 1/1;
     width: 100vmin;
@@ -62,7 +66,7 @@ body > *:first-child {
     user-select: none;
     cursor: pointer;
     aspect-ratio: 1/1;
-    background: oklch(0.8 0 0);
+    background: oklch(0.5 0 0);
     margin-bottom: 25%;
     margin-right: 25%;
 }
@@ -85,43 +89,56 @@ body > *:first-child {
     padding: 1ch;
 }
 
-.color-0 {
+.skeleton {
     --h: 40;
-    background: oklch(0.7 0.2 var(--h));
+    background: linear-gradient(90deg, oklch(0.8 0.05 var(--h)) var(--hp), white var(--hp));
 }
 
-.color-1 {
+.leech {
+    --h: 0;
+    background: linear-gradient(90deg, oklch(0.6 0.2 var(--h)) var(--hp), white var(--hp));
+
+}
+
+.werhog {
+    --h: 80;
+    background: linear-gradient(90deg, oklch(0.7 0.4 var(--h)) var(--hp), white var(--hp));
+
+}
+
+.tentacle-vine {
+    --h: 150;
+    background: linear-gradient(90deg, oklch(0.7 0.2 var(--h)) var(--hp), white var(--hp));
+}
+
+.fire-ball {
+    --h: 40;
+}
+
+.ice-storm {
+    --h: 200;
+}
+
+.battle-axe {
     --h: 100;
-    background: oklch(0.7 0.2 var(--h));
 }
 
-.color-2 {
-    --h: 160;
-    background: oklch(0.7 0.2 var(--h));
-}
-
-.color-3 {
-    --h: 220;
-    background: oklch(0.7 0.2 var(--h));
-}
-
-.color-4 {
-    --h: 280;
-    background: oklch(0.7 0.2 var(--h));
+.arrows {
+    --h: 170;
 }
 
 .level-1 {
-    background: oklch(0.7 0.2 var(--h));
+    background: oklch(0.4 0.2 var(--h));
 }
 
 .level-2 {
-    background: oklch(0.8 0.2 var(--h));
+    background: oklch(0.5 0.2 var(--h));
 }
 
 .level-3 {
-    background: oklch(0.9 0.2 var(--h));
+    background: oklch(0.6 0.2 var(--h));
 }
 
 .level-4 {
-    background: oklch(1 0.2 var(--h));
+    background: oklch(0.7 0.2 var(--h));
 }
